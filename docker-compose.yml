@@ -1,0 +1,90 @@
+# /vol1/1000/docker/cli01/docker-compose.yml
+version: '3.8'
+
+services:
+  # ==============================================================
+  # 🧠 第一战区：CLI01 进化沙盒 (允许内部折腾，严禁向外越权)
+  # ==============================================================
+  cli_prison:
+    build: .
+    container_name: stargate_cli_01
+    restart: always
+    
+    # 🟢 厂长特赦：撤销全盘只读！允许它在自己的集装箱里写代码、存图片！
+    # 🔴 底线防御：依然禁止它修改宿主机的系统级内核权限
+    security_opt:
+      - no-new-privileges:true
+      
+    # 📡 核心生命线：必须暴露雷达端口，否则 2厂和总厂的双轨熔断将无法触达！
+    ports:
+      - "8999:8999"
+
+    environment:
+      # 👇 1号总监打的防乱码补丁：强制整个容器和 Python 拥抱 UTF-8 宇宙！
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+      - PYTHONIOENCODING=utf-8
+      
+      # (下面保留您原有的配置不变)
+      - HTTP_PROXY=http://Clash:OCCR2wKy@192.168.2.22:7893
+      - HTTPS_PROXY=http://Clash:OCCR2wKy@192.168.2.22:7893
+      - ALL_PROXY=socks5://Clash:OCCR2wKy@192.168.2.22:7893
+      - NO_PROXY=localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
+      - GEMINI_API_KEY=AIzaSyB71alV_GA-n7QXqsCe_OjNBwX4FejtgGw
+      - NANOBANANA_MODEL=${NANOBANANA_MODEL:-gemini-3.1-flash-image}
+      
+    volumes:
+      # 1. 核心密令与会话记忆库
+      - /vol1/1000/docker/cli01/.gemini:/root/.gemini
+      # 2. 源码与工作区挂载 (支撑 sandbox_worker.py)
+      - /vol1/1000/docker/cli01:/app
+      # 3. 异步任务交接区 
+      - /vol1/1000/shares/async_tasks:/mnt/factory_tasks
+      # 4. 🚀 视觉机床物理落盘传送带 (直通 0 号总厂！)
+      - /vol1/1000/docker/0/storage:/app/storage
+      # 5. ☢️ 天基 EMP 武器神经索 (允许沙盒向宿主机发送清洗指令)
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+
+    # 保持底层标准输入畅通
+    stdin_open: true
+    tty: true
+          
+    # 🦾 厂长的自动化装甲：开机装配视觉扩展 -> 启动雷达与 Python 工头
+    command:
+      - sh
+      - -c
+      - |
+        echo '🟢 [CLI01] 进化沙盒已通电，获得内部创造权限！'
+        
+        # 🔫 [最高优先级：物理武器库热装配] 彻底无视 Docker 虚假缓存！
+        if ! command -v pkill >/dev/null 2>&1 || ! command -v docker >/dev/null 2>&1; then
+          echo '🔧 [武器装配] 雷达扫描到底层武器缺失，触发 JIT 动态热更新...'
+          apt-get update && apt-get install -y procps docker.io || echo '⚠️ 动态武器装配失败，请检查网络！'
+        fi
+        
+        if [ ! -d '/app/extensions/nanobanana/mcp-server/dist' ]; then
+          echo '🔧 [物理机床] 正在拉取并锻造 NanoBanana 视觉装甲...'
+          rm -rf /app/extensions/nanobanana
+          mkdir -p /app/extensions
+          git clone https://github.com/gemini-cli-extensions/nanobanana.git /app/extensions/nanobanana
+          expect -c '
+          set timeout -1
+          spawn gemini extensions install /app/extensions/nanobanana
+          expect "Do you want to continue?" { send "y\r" }
+          expect "Do you want to continue?" { send "y\r" }
+          # 💡 双美元符 $$ 确保环境变量原样透传
+          expect "API Key" { send "$$env(GEMINI_API_KEY)\r" }
+          expect eof
+          ' || echo '⚠️ 视觉装甲挂载出现波动，请检查网络日志！'
+        else
+          echo '✅ [物理机床] 视觉扩展已就绪，跳过编译，秒级通电！'
+        fi
+        
+        echo '🚀 [系统点火] 启动核心工作台与熔断雷达...'
+        cd /app && python3 -u /app/sandbox_worker.py
